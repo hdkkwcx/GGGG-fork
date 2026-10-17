@@ -2,7 +2,8 @@
 Products derived by fusing the ones that have files, keyed by product name.
 
 Each entry carries the variant and the source matrices, which are the real products' own `Y_sat`
-in `products` order - so the fusion's design is the same one everywhere, and
+in `products` order, less `cfg.fused_anchor_exclude` - so the fusion's design is the same one
+everywhere, and
 `fused_anchor_selection.csv` can name its coefficients.
 
 The derived product shares the source products' `times`, `ids` and `Y_obs`:
@@ -16,7 +17,7 @@ function _build_fused_products!(
     lonlat::AbstractMatrix,
 )
     isempty(cfg.fused_anchor_variants) && return String[], Dict{String,Any}()
-    source_names = copy(products)
+    source_names = _fusion_source_names(cfg, products)
     sources = [Matrix{Float64}(product_data[name].Y_sat) for name in source_names]
     template = product_data[first(source_names)]
     derived = String[]

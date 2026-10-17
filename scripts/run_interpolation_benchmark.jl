@@ -74,6 +74,9 @@ function benchmark_config(
             (blend_axes == [:constant] ? "" : "_blendagrenv") *
             (fused_anchor ? "_fusedanchor" : "") *
             (fused_anchor_lagnbr ? "_fusedlagnbr" : "") *
+            # The fusion now leaves FY4B out (`fused_anchor_exclude`), so a fused run lands beside
+            # the three-product runs instead of overwriting the outputs the reports read.
+            (fused_anchor || fused_anchor_lagnbr ? "_nofy4b" : "") *
             (stacked_blend ? "_stackblend" : "") *
             (gpm_uncal ? "_gpmuncal" : "") *
             (repeats > 1 ? "_repeats$(repeats)" : ""),
@@ -366,8 +369,9 @@ function main(args=ARGS)
     # on the target product's own magnitude. Reported beside the constant rule, not instead of it.
     blend_axes = "--blend-axis" in args || any(startswith("--blend-axis="), args) ?
         [:constant, parse_blend_axis(args)] : Symbol[:constant]
-    # Add MERGED_OLS and MERGED_MEAN: products whose anchor is a fusion of the three real ones,
-    # fitted per fold on training stations only. See `SatelliteFusion` for why both variants exist.
+    # Add MERGED_OLS and MERGED_MEAN: products whose anchor is a fusion of GPM and GSMaP (FY4B is
+    # left out, see `fused_anchor_exclude`), fitted per fold on training stations only. See
+    # `SatelliteFusion` for why both variants exist.
     fused_anchor = "--fused-anchor" in args
     # Add MERGED_OLS_LAGNBR: the least-squares fusion widened with each product's t-1/t+1 values and
     # its mean over the nearest stations, fitted per agreement-envelope band. Separate from
@@ -401,6 +405,7 @@ function main(args=ARGS)
         "blend_axes=$(join(blend_axes, "+")), " *
         "fused_anchor=$fused_anchor, " *
         "fused_anchor_lagnbr=$fused_anchor_lagnbr, " *
+        "fused_anchor_exclude=$(join(cfg.fused_anchor_exclude, "+")), " *
         "stacked_blend=$stacked_blend, " *
         "gpm_uncal=$gpm_uncal, " *
         "output=$(cfg.mger.outdir)")

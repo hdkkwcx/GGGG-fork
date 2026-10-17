@@ -365,8 +365,12 @@ function _write_benchmark_outputs(
             key=["fused_anchor", "fused_anchor_leakage"],
             value=[
                 "derived products $(join([_fused_product_name(v) for v in
-                    sort(cfg.fused_anchor_variants)], ", ")): the anchor is a combination of the " *
-                "products that have files, not a satellite field as shipped. Their `raw` row is " *
+                    sort(cfg.fused_anchor_variants)], ", ")): the anchor is a combination of " *
+                "$(join(_fusion_source_names(cfg, setdiff(products,
+                    [_fused_product_name(v) for v in cfg.fused_anchor_variants])), ", "))" *
+                (isempty(cfg.fused_anchor_exclude) ? "" :
+                    " (excluded: $(join(cfg.fused_anchor_exclude, ", ")))") *
+                ", not a satellite field as shipped. Their `raw` row is " *
                 "therefore a gauge-trained predictor that uses only satellites at prediction " *
                 "time, and is reported so the fusion's contribution can be read separately from " *
                 "the correction built on top of it",

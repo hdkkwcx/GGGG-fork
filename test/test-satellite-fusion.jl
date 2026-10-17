@@ -379,11 +379,13 @@ end
             table = CSV.read(path, DataFrame)
             @test nrow(table) == 2 * k
             @test sort(unique(table.variant)) == ["mean", "ols"]
-            @test issubset([:beta_fy4b, :beta_gpm, :beta_gsmap], propertynames(table))
+            # FY4B is scored on its own but left out of the fusion by default.
+            @test issubset([:beta_gpm, :beta_gsmap], propertynames(table))
+            @test !(:beta_fy4b in propertynames(table))
             @test !any(table.fell_back)
             mean_rows = filter(row -> row.variant == "mean", table)
             @test all(row -> row.intercept == 0.0, eachrow(mean_rows))
-            @test all(row -> row.beta_gpm ≈ 1 / 3, eachrow(mean_rows))
+            @test all(row -> row.beta_gpm ≈ 1 / 2, eachrow(mean_rows))
         end
 
         @testset "a fold's anchor is the fusion fitted without that fold" begin
@@ -395,7 +397,7 @@ end
                 DataFrame; types=Dict(:station_id => String))
             position = Dict(id => index for (index, id) in enumerate(ids))
             fold_of = Dict(row.station_id => Int(row.fold) for row in eachrow(split))
-            source_order = sort(collect(keys(sat_paths)))
+            source_order = ["GPM", "GSMaP"]
             sources = [satellites[product] for product in source_order]
             stored = CSV.read(
                 joinpath(outdir, "balanced_spatial", "merged_ols", "oof_raw.csv"), DataFrame)
@@ -416,7 +418,7 @@ end
                 DataFrame; types=Dict(:station_id => String))
             position = Dict(id => index for (index, id) in enumerate(ids))
             fold_of = Dict(row.station_id => Int(row.fold) for row in eachrow(split))
-            sources = [satellites[product] for product in sort(collect(keys(sat_paths)))]
+            sources = [satellites[product] for product in ["GPM", "GSMaP"]]
             lonlat = hcat(lon, lat)
             distance = haversine_distance_matrix(lonlat, lonlat)
             neighbours = [filter(!=(s), sortperm(distance[s, :])) for s in 1:n_station]
@@ -435,7 +437,8 @@ end
                 end
             end
             table = CSV.read(joinpath(outdir, "fused_anchor_grouped_coefficients.csv"), DataFrame)
-            @test nrow(table) == k * (blend_band_count(:agreement_envelope) + 1) * 13
+            @test nrow(table) == k * (blend_band_count(:agreement_envelope) + 1) * 9
+            @test !any(contains("fy4b"), table.term)
             @test sort(unique(table.group)) == collect(0:blend_band_count(:agreement_envelope))
         end
     end

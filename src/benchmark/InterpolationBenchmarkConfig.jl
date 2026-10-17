@@ -125,6 +125,23 @@ stack_band_count() = (blend_band_count(:agreement_envelope) + 1) *
 _fused_product_name(variant::Symbol) = "MERGED_$(uppercase(String(variant)))"
 
 """
+The products a fusion reads: every product with a file except `cfg.fused_anchor_exclude`.
+
+An excluded name that is not a loaded product is refused rather than ignored, because a typo would
+otherwise put the product back into the fusion without a word.
+"""
+function _fusion_source_names(cfg, products::AbstractVector{<:AbstractString})
+    missing_names = setdiff(cfg.fused_anchor_exclude, products)
+    isempty(missing_names) || throw(ArgumentError(
+        "fused_anchor_exclude names $(join(missing_names, ", ")), which is not among the " *
+        "loaded products $(join(products, ", "))",
+    ))
+    names = [String(name) for name in products if !(name in cfg.fused_anchor_exclude)]
+    isempty(names) && throw(ArgumentError("fused_anchor_exclude leaves no product to fuse"))
+    return names
+end
+
+"""
 The methods a run reports: `BENCHMARK_METHODS`, plus the blended counterparts when
 `satellite_wet_blend` is on.
 
@@ -204,6 +221,11 @@ Base.@kwdef struct InterpolationBenchmarkConfig
     # training stations alone (see `SatelliteFusion`). Empty means the run scores only the
     # products that have files. Output directory suffix `_fusedanchor`.
     fused_anchor_variants::Vector{Symbol} = Symbol[]
+    # Products left out of every fusion's design. They are still scored on their own and still
+    # bound the common time grid; only the derived products stop reading them. FY4B by default: it
+    # is the weakest of the three anchors (RMSE 1.317 against 0.965 for GPM and 1.223 for GSMaP).
+    # Output directory suffix `_nofy4b` when FY4B is left out.
+    fused_anchor_exclude::Vector{String} = ["FY4B"]
     # Acknowledges that this run's numbers are not admissible as a result.
     #
     # `joint_covariates.spec_path` names a variable set and local/global role map screened over
@@ -423,6 +445,8 @@ function _validate_benchmark_config(cfg::InterpolationBenchmarkConfig, n_station
     ))
     length(unique(cfg.fused_anchor_variants)) == length(cfg.fused_anchor_variants) ||
         throw(ArgumentError("fused_anchor_variants must be unique"))
+    length(unique(cfg.fused_anchor_exclude)) == length(cfg.fused_anchor_exclude) ||
+        throw(ArgumentError("fused_anchor_exclude must be unique"))
     # A derived product has no file, so a fixed full-data specification has no role map for it and
     # `joint_inputs.specification.role_maps[product]` would throw mid-run. Nested per-fold
     # selection screens whatever product it is handed, which is what these need.

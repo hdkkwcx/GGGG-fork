@@ -22,6 +22,10 @@ Both are offered because that trade-off cannot be resolved by tuning. A shrinkag
 on inner-split RMSE would collapse to the pooled optimum every time and could never reach the
 heavy gate, so the choice is exposed as two products rather than hidden in a selection step.
 
+Every figure above was measured on the three-product fusion. The benchmark now leaves FY4B out of
+the fusion by default (`InterpolationBenchmarkConfig.fused_anchor_exclude`), so its derived
+products are GPM + GSMaP combinations and those figures need a new run before they describe them.
+
 Leakage is the caller's responsibility and the whole point of `station_rows`: the benchmark fits
 these coefficients on a fold's *training* stations only and then applies them everywhere, so the
 held-out stations' gauge values never reach the anchor their own predictions are built on.

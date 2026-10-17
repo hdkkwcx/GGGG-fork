@@ -1259,6 +1259,15 @@ end
     @test benchmark_products((; fused_anchor_variants=Symbol[]), products) == products
     @test benchmark_products((; fused_anchor_variants=[:ols, :mean]), products) ==
         ["FY4B", "GPM", "GSMaP", "MERGED_MEAN", "MERGED_OLS"]
+
+    # The fusion leaves FY4B out by default; a name that is not a product is refused, not ignored.
+    @test InterpolationBenchmarkConfig(mger=_dummy_mger()).fused_anchor_exclude == ["FY4B"]
+    @test _fusion_source_names((; fused_anchor_exclude=["FY4B"]), products) == ["GPM", "GSMaP"]
+    @test _fusion_source_names((; fused_anchor_exclude=String[]), products) == products
+    @test _fusion_source_names((; fused_anchor_exclude=["FY4B"]),
+        ["FY4B", "GPM_uncal", "GSMaP"]) == ["GPM_uncal", "GSMaP"]
+    @test_throws ArgumentError _fusion_source_names((; fused_anchor_exclude=["FY4b"]), products)
+    @test_throws ArgumentError _fusion_source_names((; fused_anchor_exclude=products), products)
 end
 
 @testset "Day-block bootstrap of detection skill" begin

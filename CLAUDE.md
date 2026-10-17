@@ -247,7 +247,9 @@ test asserts every incumbent metric row is identical with them on):
 - `--blend-axis agreement_envelope` adds `blend_agrenv_*` beside them, with one weight per band of
   (how many products call the cell wet) x (their maximum).
 - `--fused-anchor` adds the derived products `MERGED_OLS` and `MERGED_MEAN`, whose anchor is a
-  combination of FY4B, GPM and GSMaP. The OLS coefficients are fitted inside every fold on its
+  combination of GPM and GSMaP (FY4B is left out of the fusion by `fused_anchor_exclude`, though it
+  is still scored on its own and still bounds the time grid; fused runs get a `_nofy4b` output
+  suffix). The OLS coefficients are fitted inside every fold on its
   training stations only (`fused_anchor_selection.csv`), so a held-out gauge never reaches its own
   anchor; it needs nested covariate selection. `run_claim_reassessment.jl` assesses every product
   the run scored, derived ones included.
